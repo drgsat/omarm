@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>برنامج ثانوية عمر المختار</title>
-  
+
   <meta name="theme-color" content="#1e3a8a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,8 +13,8 @@
 
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
-  
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+
   <!-- خط Cairo ومكتبة html2canvas لحفظ الصور -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,13 +46,15 @@
       display: flex;
       flex-direction: column;
       padding: 0.75rem;
+      padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
     }
 
     .container { max-width: 1300px; width: 100%; margin: 0 auto; flex: 1; }
 
-    /* شريط تنبيه وتثبيت التطبيق للموبايل */
+    /* شريط تثبيت التطبيق */
     .install-banner {
-      display: none; /* يظهر عبر الجافاسكريبت عند جاهزية التثبيت */
+      display: none;
       background: linear-gradient(135deg, #059669, #10b981);
       color: #fff;
       padding: 0.75rem 1rem;
@@ -63,10 +65,7 @@
       justify-content: space-between;
       gap: 0.5rem;
     }
-    .install-banner-text {
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
+    .install-banner-text { font-size: 0.85rem; font-weight: 600; }
     .btn-install {
       background: #ffffff;
       color: #065f46;
@@ -81,7 +80,7 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    /* شريط المزامنة والحالة */
+    /* شريط المزامنة */
     .sync-bar {
       display: flex;
       align-items: center;
@@ -99,7 +98,6 @@
     .status-dot.loading { background: #3b82f6; animation: pulse 1s infinite; }
     @keyframes pulse { 50% { opacity: 0.4; } }
 
-    /* Header */
     header {
       background: linear-gradient(135deg, var(--primary-dark), var(--primary));
       border-radius: 1rem;
@@ -111,7 +109,6 @@
     header h1 { font-size: clamp(1.4rem, 4vw, 1.9rem); font-weight: 800; }
     header p { color: #cbd5e1; font-size: 0.95rem; margin-top: 0.25rem; }
 
-    /* التبويبات الرئيسية (Tabs) */
     .nav-tabs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -141,7 +138,6 @@
       box-shadow: 0 4px 10px rgba(30, 64, 175, 0.4);
     }
 
-    /* صناديق البحث والتحكم */
     .search-box { max-width: 500px; margin: 0 auto 1.25rem; }
     .search-input {
       width: 100%;
@@ -157,7 +153,6 @@
     }
     .search-input:focus { border-color: var(--primary-light); }
 
-    /* شبكة الأزرار (شعب / معلمين) */
     .grid-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -183,7 +178,6 @@
       transform: translateY(-2px);
     }
 
-    /* صفحة اليوم */
     .today-container {
       background: #fff;
       color: #172033;
@@ -212,11 +206,10 @@
     }
     .filter-chip.active { background: var(--primary); color: #fff; }
 
-    /* الجداول */
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: center; }
     th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.3rem; vertical-align: middle; }
     thead th { background: var(--primary); color: #fff; font-weight: 700; }
-    .day-cell, th.class-header { background: #dbeafe; color: var(--primary-dark); font-weight: 800; }
+    .day-cell, th.class-header, td.class-header { background: #dbeafe; color: var(--primary-dark); font-weight: 800; }
     tbody tr:nth-child(even) { background: #f8fafc; }
     .today-row td { background: #fef9c3 !important; }
     .today-row td.day-cell { background: #fde047 !important; }
@@ -224,11 +217,9 @@
     .teacher-sub { font-size: 0.75rem; color: #475569; }
     .empty-cell { color: #94a3b8; font-weight: normal; }
 
-    /* تمييز حصة اليوم */
     table.has-selection .dimmed { opacity: 0.25; filter: grayscale(1); }
     table.has-selection .highlighted { background: #fef08a !important; font-weight: bold; }
 
-    /* النوافذ المنبثقة (Modals) */
     .modal {
       display: none;
       position: fixed;
@@ -295,7 +286,7 @@
 
 <div class="container">
 
-  <!-- شريط وزر التثبيت التلقائي للموبايل -->
+  <!-- شريط وزر التثبيت -->
   <div id="installBanner" class="install-banner">
     <div class="install-banner-text">
       📱 <strong>ثبّت التطبيق على هاتفك</strong> لتصفح الجدول بسرعة وبدون إنترنت!
@@ -317,14 +308,12 @@
     <p>البرنامج الأسبوعي واليومي للحصص المدرسية</p>
   </header>
 
-  <!-- أزرار التبديل الرئيسية -->
   <nav class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('today')">📅 جدول اليوم</button>
     <button class="tab-btn" onclick="switchTab('classes')">🎓 برنامج الشعب</button>
     <button class="tab-btn" onclick="switchTab('teachers')">👨‍🏫 برنامج المعلمين</button>
   </nav>
 
-  <!-- قسم 1: جدول اليوم -->
   <section id="tab-today" class="tab-content">
     <div class="today-controls" id="todayControls"></div>
     <div class="today-container">
@@ -332,7 +321,6 @@
     </div>
   </section>
 
-  <!-- قسم 2: برنامج الشعب -->
   <section id="tab-classes" class="tab-content" style="display:none;">
     <div class="search-box">
       <input type="search" class="search-input" id="classSearch" placeholder="🔍 ابحث عن الصف أو الشعبة...">
@@ -340,7 +328,6 @@
     <div id="classList" class="grid-list"></div>
   </section>
 
-  <!-- قسم 3: برنامج المعلمين -->
   <section id="tab-teachers" class="tab-content" style="display:none;">
     <div class="search-box">
       <input type="search" class="search-input" id="teacherSearch" placeholder="🔍 ابحث عن اسم المدرس...">
@@ -349,7 +336,6 @@
   </section>
 </div>
 
-<!-- النافذة المنبثقة للجدول التفصيلي -->
 <div id="modal" class="modal">
   <div class="modal-box">
     <div class="modal-header">
@@ -369,31 +355,32 @@
 
 <script>
 // ==========================================
-// 0. إدارة زر تثبيت التطبيق على الموبايل (PWA Install)
+// 0. تثبيت التطبيق (PWA Install)
 // ==========================================
-let deferredPrompt;
+let deferredPrompt = null;
 const installBanner = document.getElementById('installBanner');
 const btnInstallApp = document.getElementById('btnInstallApp');
 
-// التحقق إن كان المستخدم يتصفح من هاتف آيفون (iOS Safari)
-const isIos = () => {
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(userAgent);
-};
+// آيفون / آيباد (الآيباد الحديث يعرّف نفسه كـ Mac)
+const isIos = () =>
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-// التحقق إن كان التطبيق مثبت مسبقاً
-const isInStandaloneMode = () => ('standalone' in window.navigator) || (window.matchMedia('(display-mode: standalone)').matches);
+// هل التطبيق مثبت ويعمل بشكل مستقل؟
+const isInStandaloneMode = () =>
+  window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches;
 
 if (!isInStandaloneMode()) {
   if (isIos()) {
-    // إظهار البنر للأيفون مع توضيح طريقة التثبيت اليدوية
+    // آيفون: لا يوجد beforeinstallprompt، التثبيت يدوي من Safari
     installBanner.style.display = 'flex';
     btnInstallApp.textContent = 'كيفية التثبيت ℹ️';
     btnInstallApp.onclick = () => {
-      alert("لتثبيت التطبيق على الآيفون:\n1. اضغط على زر المشاركة (Share ⬆️) بالأسفل في Safari.\n2. اختر 'إضافة إلى الشاشة الرئيسية' (Add to Home Screen ➕).");
+      alert("لتثبيت التطبيق على الآيفون:\n1. افتح الموقع في متصفح Safari.\n2. اضغط زر المشاركة (Share ⬆️).\n3. اختر 'إضافة إلى الشاشة الرئيسية' (Add to Home Screen ➕).");
     };
   } else {
-    // لأجهزة أندرويد وكروم
+    // أندرويد / كروم: الحدث يصل فقط إذا تحققت شروط manifest + service worker
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -404,12 +391,10 @@ if (!isInStandaloneMode()) {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          installBanner.style.display = 'none';
-        }
+        if (outcome === 'accepted') installBanner.style.display = 'none';
         deferredPrompt = null;
       } else {
-        alert("لتثبيت التطبيق: افتح قائمة خيارات المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'.");
+        alert("لتثبيت التطبيق: افتح قائمة المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'.");
       }
     });
   }
@@ -459,8 +444,9 @@ async function checkXmlUpdate(isManual = false) {
 
     const cachedXml = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (text !== cachedXml) {
+      const parsed = parseXml(text); // نتأكد أنه صالح قبل الحفظ
       localStorage.setItem(LOCAL_STORAGE_KEY, text);
-      APP_DATA = parseXml(text);
+      APP_DATA = parsed;
       renderAll();
       setSyncStatus('online', 'تم تحديث البيانات إلى أحدث نسخة بنجاح ✅');
     } else {
@@ -489,7 +475,7 @@ function decodeBuffer(buf) {
   let asciiPeek = '';
   const bytes = new Uint8Array(buf.slice(0, 300));
   for (let i = 0; i < bytes.length; i++) asciiPeek += String.fromCharCode(bytes[i]);
-  
+
   let encoding = 'utf-8';
   const match = asciiPeek.match(/encoding=["']([^"']+)["']/i);
   if (match) {
@@ -779,11 +765,14 @@ document.getElementById('teacherSearch').oninput = e => renderTeachers(e.target.
 document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
 document.onkeydown = e => { if (e.key === 'Escape') closeModal(); };
 
+// ==========================================
+// 3. تسجيل الـ Service Worker (مسار نسبي ليعمل على github.io/repo/)
+// ==========================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.error('فشل تسجيل Service Worker:', err);
-    });
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => console.log('SW جاهز، النطاق:', reg.scope))
+      .catch(err => console.error('فشل تسجيل Service Worker:', err));
   });
 }
 </script>
