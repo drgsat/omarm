@@ -6,8 +6,13 @@
   <title>برنامج ثانوية عمر المختار</title>
   
   <meta name="theme-color" content="#1e3a8a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="عمر المختار">
+
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./icons/icon.jpg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
   
   <!-- خط Cairo ومكتبة html2canvas لحفظ الصور -->
@@ -31,7 +36,6 @@
       --accent: #f59e0b;
       --shadow: rgba(0, 0, 0, 0.35);
     }
-   
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -46,7 +50,38 @@
 
     .container { max-width: 1300px; width: 100%; margin: 0 auto; flex: 1; }
 
-    /* شريط التنبيه والمزامنة */
+    /* شريط تنبيه وتثبيت التطبيق للموبايل */
+    .install-banner {
+      display: none; /* يظهر عبر الجافاسكريبت عند جاهزية التثبيت */
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .install-banner-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .btn-install {
+      background: #ffffff;
+      color: #065f46;
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* شريط المزامنة والحالة */
     .sync-bar {
       display: flex;
       align-items: center;
@@ -239,7 +274,6 @@
     .btn-save:hover { background: #047857; }
     .btn-close { background: rgba(255,255,255,0.2); color: #fff; font-size: 1.2rem; }
 
-    /* الحاوية المخفية لتصدير الصورة بجودة عالية */
     #exportContainer {
       position: fixed;
       left: -9999px;
@@ -255,12 +289,20 @@
       font-size: 0.85rem;
       padding: 1.5rem 0 0.5rem;
     }
-    
   </style>
 </head>
 <body>
 
 <div class="container">
+
+  <!-- شريط وزر التثبيت التلقائي للموبايل -->
+  <div id="installBanner" class="install-banner">
+    <div class="install-banner-text">
+      📱 <strong>ثبّت التطبيق على هاتفك</strong> لتصفح الجدول بسرعة وبدون إنترنت!
+    </div>
+    <button id="btnInstallApp" class="btn-install">تثبيت التطبيق الآن 📲</button>
+  </div>
+
   <!-- شريط المزامنة والحالة -->
   <div class="sync-bar">
     <div class="status-badge">
@@ -271,7 +313,6 @@
   </div>
 
   <header>
-
     <h1>📚 ثانوية عمر المختار</h1>
     <p>البرنامج الأسبوعي واليومي للحصص المدرسية</p>
   </header>
@@ -308,7 +349,7 @@
   </section>
 </div>
 
-<!-- النافذة المنبثقة للجدول التفصيلي (معلم أو شعبة) -->
+<!-- النافذة المنبثقة للجدول التفصيلي -->
 <div id="modal" class="modal">
   <div class="modal-box">
     <div class="modal-header">
@@ -328,6 +369,58 @@
 
 <script>
 // ==========================================
+// 0. إدارة زر تثبيت التطبيق على الموبايل (PWA Install)
+// ==========================================
+let deferredPrompt;
+const installBanner = document.getElementById('installBanner');
+const btnInstallApp = document.getElementById('btnInstallApp');
+
+// التحقق إن كان المستخدم يتصفح من هاتف آيفون (iOS Safari)
+const isIos = () => {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+};
+
+// التحقق إن كان التطبيق مثبت مسبقاً
+const isInStandaloneMode = () => ('standalone' in window.navigator) || (window.matchMedia('(display-mode: standalone)').matches);
+
+if (!isInStandaloneMode()) {
+  if (isIos()) {
+    // إظهار البنر للأيفون مع توضيح طريقة التثبيت اليدوية
+    installBanner.style.display = 'flex';
+    btnInstallApp.textContent = 'كيفية التثبيت ℹ️';
+    btnInstallApp.onclick = () => {
+      alert("لتثبيت التطبيق على الآيفون:\n1. اضغط على زر المشاركة (Share ⬆️) بالأسفل في Safari.\n2. اختر 'إضافة إلى الشاشة الرئيسية' (Add to Home Screen ➕).");
+    };
+  } else {
+    // لأجهزة أندرويد وكروم
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBanner.style.display = 'flex';
+    });
+
+    btnInstallApp.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          installBanner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      } else {
+        alert("لتثبيت التطبيق: افتح قائمة خيارات المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'.");
+      }
+    });
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  installBanner.style.display = 'none';
+  deferredPrompt = null;
+});
+
+// ==========================================
 // 1. إدارة البيانات، الـ Offline، والتحديث التلقائي
 // ==========================================
 const LOCAL_STORAGE_KEY = 'omar_schedule_xml';
@@ -336,9 +429,7 @@ let selectedTodayPeriod = null;
 
 const DAY_NAMES = { 0: 'الأحد', 1: 'الاثنين', 2: 'الثلاثاء', 3: 'الأربعاء', 4: 'الخميس', 5: 'الجمعة', 6: 'السبت' };
 
-// بدء التطبيق
 window.addEventListener('DOMContentLoaded', async () => {
-  // أولاً: تشغيل فوري من الذاكرة المحلية إذا كانت متوفرة
   const cachedXml = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (cachedXml) {
     try {
@@ -349,12 +440,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       console.warn("بيانات الكاش غير صالحة:", e);
     }
   }
-
-  // ثانياً: فحص ملف omar.xml من السيرفر للتأكد إن كان هناك تعديل
   await checkXmlUpdate(false);
 });
 
-// فحص وجود تعديل على ملف omar.xml
 async function checkXmlUpdate(isManual = false) {
   if (!navigator.onLine) {
     setSyncStatus('offline', 'غير متصل بالإنترنت (يعمل دون إنترنت)');
@@ -366,13 +454,11 @@ async function checkXmlUpdate(isManual = false) {
     const res = await fetch('omar.xml?nocache=' + Date.now(), { cache: 'no-cache' });
     if (!res.ok) throw new Error('تعذر جلب ملف omar.xml');
 
-    // قراءة الملف وفك الترميز (يدعم UTF-8 و Windows-1256 تلقائياً)
     const buffer = await res.arrayBuffer();
     const text = decodeBuffer(buffer);
 
     const cachedXml = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (text !== cachedXml) {
-      // تم العثور على نسخة جديدة!
       localStorage.setItem(LOCAL_STORAGE_KEY, text);
       APP_DATA = parseXml(text);
       renderAll();
@@ -399,7 +485,6 @@ function setSyncStatus(state, msg) {
   else if (state === 'loading') dot.classList.add('loading');
 }
 
-// فك ترميز ملف XML سواء كان UTF-8 أو Windows-1256
 function decodeBuffer(buf) {
   let asciiPeek = '';
   const bytes = new Uint8Array(buf.slice(0, 300));
@@ -418,13 +503,11 @@ function decodeBuffer(buf) {
   }
 }
 
-// دالة تفكيك وتقسيم المعرفات المشتركة
 function splitIds(val) {
   if (!val) return [];
   return val.trim().split(/[\s,;]+/).filter(Boolean);
 }
 
-// تحويل XML إلى كائن JSON منظم
 function parseXml(xmlString) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlString, "text/xml");
@@ -472,7 +555,6 @@ function parseXml(xmlString) {
     const tIds = splitIds(card.getAttribute('teacherids'));
     const teacherNames = tIds.map(tid => teachers[tid] || tid);
 
-    // ربط الحصة بالشعبة
     cIds.forEach(cid => {
       if (!byClass[cid]) byClass[cid] = {};
       if (!byClass[cid][day]) byClass[cid][day] = {};
@@ -480,7 +562,6 @@ function parseXml(xmlString) {
       byClass[cid][day][period].push({ subject, teachers: teacherNames });
     });
 
-    // ربط الحصة بالمعلم
     tIds.forEach(tid => {
       if (!byTeacher[tid]) byTeacher[tid] = {};
       if (!byTeacher[tid][day]) byTeacher[tid][day] = {};
@@ -530,14 +611,11 @@ function renderAll() {
   renderTeachers();
 }
 
-// عرض جدول اليوم المباشر
 function renderTodaySchedule() {
   const container = document.getElementById('todayTableWrap');
   const controls = document.getElementById('todayControls');
   const d = APP_DATA.today;
-  const dayName = DAY_NAMES[d] || 'اليوم';
 
-  // شريط فلترة الحصص
   controls.innerHTML = `<button class="filter-chip ${selectedTodayPeriod === null ? 'active' : ''}" onclick="filterPeriod(null)">عرض الكل</button>`;
   for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) {
     controls.innerHTML += `<button class="filter-chip ${selectedTodayPeriod === p ? 'active' : ''}" onclick="filterPeriod(${p})">الحصة ${p}</button>`;
@@ -583,7 +661,6 @@ function filterPeriod(p) {
   renderTodaySchedule();
 }
 
-// عرض قائمة الشعب
 function renderClasses(filter = '') {
   const list = document.getElementById('classList');
   list.innerHTML = '';
@@ -623,7 +700,6 @@ function buildClassTable(cid) {
   return html + `</tbody></table>`;
 }
 
-// عرض قائمة المعلمين
 function renderTeachers(filter = '') {
   const list = document.getElementById('teacherList');
   list.innerHTML = '';
@@ -662,7 +738,6 @@ function buildTeacherTable(tid) {
   return html + `</tbody></table>`;
 }
 
-// المودال وحفظ الصور
 function showModalSchedule(title, tableHtml) {
   document.getElementById('modalTitle').textContent = title;
   document.getElementById('modalBody').innerHTML = tableHtml;
@@ -699,17 +774,18 @@ document.getElementById('btnSaveImg').onclick = () => {
   }, 150);
 };
 
-// أحداث البحث والإغلاق
 document.getElementById('classSearch').oninput = e => renderClasses(e.target.value);
 document.getElementById('teacherSearch').oninput = e => renderTeachers(e.target.value);
 document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
 document.onkeydown = e => { if (e.key === 'Escape') closeModal(); };
 
-// تسجيل الـ Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(console.error);
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.error('فشل تسجيل Service Worker:', err);
+    });
+  });
 }
-
 </script>
 </body>
 </html>
