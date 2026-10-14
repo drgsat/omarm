@@ -1,46 +1,46 @@
-const CACHE_NAME = 'al-rusafa-shell-v1';
-const APP_SHELL = [
+const CACHE_NAME = 'omar-mokhtar-v2';
+const APP_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icons/icon.svg'
+  './omar.xml',
+  './icons/icon.jpg',
+  'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap',
+  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_ASSETS)).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((key) => key.startsWith('al-rusafa-') && key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const requestUrl = new URL(request.url);
+  const req = event.request;
+  const url = new URL(req.url);
 
-  if (request.method !== 'GET' || requestUrl.origin !== self.location.origin) return;
-
-  if (request.mode === 'navigate') {
+  // إذا كان الطلب لفحص omar.xml نحاول جلبه من الشبكة أولاً مع الرجوع للكاش عند انقطاع النت
+  if (url.pathname.endsWith('omar.xml')) {
     event.respondWith(
-      fetch(request).catch(() => caches.match('./index.html'))
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req))
     );
     return;
   }
 
-  if (APP_SHELL.some((path) => new URL(path, self.registration.scope).href === requestUrl.href)) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => cachedResponse || fetch(request))
-    );
-  }
+  // لبقية الملفات: Cache First للسرعة القصوى
+  event.respondWith(
+    caches.match(req).then((cached) => cached || fetch(req))
+  );
 });
