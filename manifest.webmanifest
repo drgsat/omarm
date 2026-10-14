@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "برنامج  ثانوية عمر المختار ",
-  "short_name": "برنامج ثانوية عمر المختار ",
-  "description": "جداول المعلمين والشعب والبرنامج اليومي للحصص.",
+  "name": "برنامج ثانوية عمر المختار",
+  "short_name": "عمر المختار",
+  "description": "جداول المعلمين والشعب والبرنامج اليومي للحصص المدرسية.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./",
@@ -14,14 +14,14 @@
   "icons": [
     {
       "src": "./icons/icon.jpg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
       "src": "./icons/icon.jpg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ]
