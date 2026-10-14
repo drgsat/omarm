@@ -1,46 +1,711 @@
-const CACHE_NAME = 'omar-mokhtar-v2';
-const APP_ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './omar.xml',
-  './icons/icon.jpg',
-  'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap',
-  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
-];
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>برنامج ثانوية عمر المختار</title>
+  
+  <meta name="theme-color" content="#1e3a8a">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon.jpg">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+  
+  <!-- خط Cairo ومكتبة html2canvas لحفظ الصور -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_ASSETS)).then(() => self.skipWaiting())
-  );
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-light: #3b82f6;
+      --primary-dark: #1e3a8a;
+      --secondary: #059669;
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-light: #334155;
+      --text-light: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #475569;
+      --accent: #f59e0b;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #1a2942 100%);
+      color: var(--text-light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem;
+    }
+
+    .container { max-width: 1300px; width: 100%; margin: 0 auto; flex: 1; }
+
+    /* شريط التنبيه والمزامنة */
+    .sync-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      background: #1e293b;
+      border: 1px solid var(--border);
+    }
+    .status-badge { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #10b981; }
+    .status-dot.offline { background: #f59e0b; }
+    .status-dot.loading { background: #3b82f6; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      border-radius: 1rem;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      box-shadow: 0 4px 12px var(--shadow);
+      margin-bottom: 1rem;
+    }
+    header h1 { font-size: clamp(1.4rem, 4vw, 1.9rem); font-weight: 800; }
+    header p { color: #cbd5e1; font-size: 0.95rem; margin-top: 0.25rem; }
+
+    /* التبويبات الرئيسية (Tabs) */
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .tab-btn {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      color: var(--text-light);
+      padding: 0.75rem 0.5rem;
+      font-family: inherit;
+      font-size: clamp(0.85rem, 2.5vw, 1.05rem);
+      font-weight: 700;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover { background: var(--bg-light); border-color: var(--primary-light); }
+    .tab-btn.active {
+      background: var(--primary);
+      border-color: #60a5fa;
+      box-shadow: 0 4px 10px rgba(30, 64, 175, 0.4);
+    }
+
+    /* صناديق البحث والتحكم */
+    .search-box { max-width: 500px; margin: 0 auto 1.25rem; }
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      border: 2px solid var(--border);
+      border-radius: 0.75rem;
+      background: var(--bg-card);
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--primary-light); }
+
+    /* شبكة الأزرار (شعب / معلمين) */
+    .grid-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.85rem;
+    }
+    .item-btn {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      color: #fff;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 5px var(--shadow);
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .item-btn:hover {
+      background: var(--bg-light);
+      border-color: var(--primary-light);
+      transform: translateY(-2px);
+    }
+
+    /* صفحة اليوم */
+    .today-container {
+      background: #fff;
+      color: #172033;
+      border-radius: 1rem;
+      padding: 1rem;
+      overflow-x: auto;
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+    .today-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+    .filter-chip {
+      background: #e2e8f0;
+      color: #1e293b;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .filter-chip.active { background: var(--primary); color: #fff; }
+
+    /* الجداول */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: center; }
+    th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.3rem; vertical-align: middle; }
+    thead th { background: var(--primary); color: #fff; font-weight: 700; }
+    .day-cell, th.class-header { background: #dbeafe; color: var(--primary-dark); font-weight: 800; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    .today-row td { background: #fef9c3 !important; }
+    .today-row td.day-cell { background: #fde047 !important; }
+    .subject-name { font-weight: 700; color: var(--primary-dark); font-size: 0.88rem; }
+    .teacher-sub { font-size: 0.75rem; color: #475569; }
+    .empty-cell { color: #94a3b8; font-weight: normal; }
+
+    /* تمييز حصة اليوم */
+    table.has-selection .dimmed { opacity: 0.25; filter: grayscale(1); }
+    table.has-selection .highlighted { background: #fef08a !important; font-weight: bold; }
+
+    /* النوافذ المنبثقة (Modals) */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .modal.open { display: flex; justify-content: center; align-items: flex-start; }
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      width: 100%;
+      max-width: 1050px;
+      margin: 1.5rem auto;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title { font-size: 1.3rem; font-weight: 700; color: #fff; }
+    .modal-body { padding: 1rem; background: #fff; overflow-x: auto; color: #0f172a; }
+
+    .btn {
+      font-family: inherit;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-save { background: var(--secondary); color: #fff; }
+    .btn-save:hover { background: #047857; }
+    .btn-close { background: rgba(255,255,255,0.2); color: #fff; font-size: 1.2rem; }
+
+    /* الحاوية المخفية لتصدير الصورة بجودة عالية */
+    #exportContainer {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      padding: 1.5rem;
+      width: 1050px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 1.5rem 0 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- شريط المزامنة والحالة -->
+  <div class="sync-bar">
+    <div class="status-badge">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="syncText">جاري فحص البيانات...</span>
+    </div>
+    <button class="btn" style="background:#334155;color:#f8fafc;padding:0.25rem 0.6rem;font-size:0.75rem;" onclick="checkXmlUpdate(true)">🔄 فحص التحديثات</button>
+  </div>
+
+  <header>
+    <h1>📚 ثانوية عمر المختار</h1>
+    <p>البرنامج الأسبوعي واليومي للحصص المدرسية</p>
+  </header>
+
+  <!-- أزرار التبديل الرئيسية -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('today')">📅 جدول اليوم</button>
+    <button class="tab-btn" onclick="switchTab('classes')">🎓 برنامج الشعب</button>
+    <button class="tab-btn" onclick="switchTab('teachers')">👨‍🏫 برنامج المعلمين</button>
+  </nav>
+
+  <!-- قسم 1: جدول اليوم -->
+  <section id="tab-today" class="tab-content">
+    <div class="today-controls" id="todayControls"></div>
+    <div class="today-container">
+      <div id="todayTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- قسم 2: برنامج الشعب -->
+  <section id="tab-classes" class="tab-content" style="display:none;">
+    <div class="search-box">
+      <input type="search" class="search-input" id="classSearch" placeholder="🔍 ابحث عن الصف أو الشعبة...">
+    </div>
+    <div id="classList" class="grid-list"></div>
+  </section>
+
+  <!-- قسم 3: برنامج المعلمين -->
+  <section id="tab-teachers" class="tab-content" style="display:none;">
+    <div class="search-box">
+      <input type="search" class="search-input" id="teacherSearch" placeholder="🔍 ابحث عن اسم المدرس...">
+    </div>
+    <div id="teacherList" class="grid-list"></div>
+  </section>
+</div>
+
+<!-- النافذة المنبثقة للجدول التفصيلي (معلم أو شعبة) -->
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-save" id="btnSaveImg">💾 حفظ كصورة</button>
+        <button class="btn btn-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="exportContainer"></div>
+
+<footer>تصميم: دراغ علي — ثانوية عمر المختار</footer>
+
+<script>
+// ==========================================
+// 1. إدارة البيانات، الـ Offline، والتحديث التلقائي
+// ==========================================
+const LOCAL_STORAGE_KEY = 'omar_schedule_xml';
+let APP_DATA = null;
+let selectedTodayPeriod = null;
+
+const DAY_NAMES = { 0: 'الأحد', 1: 'الاثنين', 2: 'الثلاثاء', 3: 'الأربعاء', 4: 'الخميس', 5: 'الجمعة', 6: 'السبت' };
+
+// بدء التطبيق
+window.addEventListener('DOMContentLoaded', async () => {
+  // أولاً: تشغيل فوري من الذاكرة المحلية إذا كانت متوفرة
+  const cachedXml = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (cachedXml) {
+    try {
+      APP_DATA = parseXml(cachedXml);
+      renderAll();
+      setSyncStatus('working', 'يعمل من النسخة المحفوظة بالجهاز');
+    } catch (e) {
+      console.warn("بيانات الكاش غير صالحة:", e);
+    }
+  }
+
+  // ثانياً: فحص ملف omar.xml من السيرفر للتأكد إن كان هناك تعديل
+  await checkXmlUpdate(false);
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-    ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  // إذا كان الطلب لفحص omar.xml نحاول جلبه من الشبكة أولاً مع الرجوع للكاش عند انقطاع النت
-  if (url.pathname.endsWith('omar.xml')) {
-    event.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-        return res;
-      }).catch(() => caches.match(req))
-    );
+// فحص وجود تعديل على ملف omar.xml
+async function checkXmlUpdate(isManual = false) {
+  if (!navigator.onLine) {
+    setSyncStatus('offline', 'غير متصل بالإنترنت (يعمل دون إنترنت)');
     return;
   }
 
-  // لبقية الملفات: Cache First للسرعة القصوى
-  event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req))
-  );
-});
+  setSyncStatus('loading', 'جاري فحص التحديثات...');
+  try {
+    const res = await fetch('omar.xml?nocache=' + Date.now(), { cache: 'no-cache' });
+    if (!res.ok) throw new Error('تعذر جلب ملف omar.xml');
+
+    // قراءة الملف وفك الترميز (يدعم UTF-8 و Windows-1256 تلقائياً)
+    const buffer = await res.arrayBuffer();
+    const text = decodeBuffer(buffer);
+
+    const cachedXml = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (text !== cachedXml) {
+      // تم العثور على نسخة جديدة!
+      localStorage.setItem(LOCAL_STORAGE_KEY, text);
+      APP_DATA = parseXml(text);
+      renderAll();
+      setSyncStatus('online', 'تم تحديث البيانات إلى أحدث نسخة بنجاح ✅');
+    } else {
+      setSyncStatus('online', 'البيانات الحالية محدثة تماماً ✅');
+    }
+  } catch (err) {
+    console.error(err);
+    if (APP_DATA) {
+      setSyncStatus('offline', 'تعذر جلب التحديث (يعمل بالنسخة المحلية)');
+    } else {
+      setSyncStatus('offline', 'فشل تحميل الملف: تأكد من وجود omar.xml');
+    }
+  }
+}
+
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('syncText');
+  txt.textContent = msg;
+  dot.className = 'status-dot';
+  if (state === 'offline') dot.classList.add('offline');
+  else if (state === 'loading') dot.classList.add('loading');
+}
+
+// فك ترميز ملف XML سواء كان UTF-8 أو Windows-1256
+function decodeBuffer(buf) {
+  let asciiPeek = '';
+  const bytes = new Uint8Array(buf.slice(0, 300));
+  for (let i = 0; i < bytes.length; i++) asciiPeek += String.fromCharCode(bytes[i]);
+  
+  let encoding = 'utf-8';
+  const match = asciiPeek.match(/encoding=["']([^"']+)["']/i);
+  if (match) {
+    const enc = match[1].toLowerCase();
+    if (enc.includes('1256') || enc.includes('windows') || enc.includes('iso')) encoding = 'windows-1256';
+  }
+  try {
+    return new TextDecoder(encoding, { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder('windows-1256').decode(buf);
+  }
+}
+
+// دالة تفكيك وتقسيم المعرفات المشتركة
+function splitIds(val) {
+  if (!val) return [];
+  return val.trim().split(/[\s,;]+/).filter(Boolean);
+}
+
+// تحويل XML إلى كائن JSON منظم
+function parseXml(xmlString) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlString, "text/xml");
+  if (xml.querySelector('parsererror')) throw new Error("XML Parser Error");
+
+  const teachers = {};
+  xml.querySelectorAll("teachers > teacher").forEach(t => {
+    const id = t.getAttribute('id');
+    teachers[id] = (t.getAttribute('name') || t.getAttribute('short') || id).trim();
+  });
+
+  const classes = {};
+  const classOrder = [];
+  xml.querySelectorAll("classes > class").forEach(c => {
+    const id = c.getAttribute('id');
+    classes[id] = (c.getAttribute('name') || id).trim();
+    classOrder.push(id);
+  });
+
+  const subjects = {};
+  xml.querySelectorAll("subjects > subject").forEach(s => {
+    const id = s.getAttribute('id');
+    subjects[id] = (s.getAttribute('name') || s.getAttribute('short') || id).trim();
+  });
+
+  const byClass = {};
+  const byTeacher = {};
+  const daysFound = new Set();
+  const periodsFound = new Set();
+
+  xml.querySelectorAll("cards > card").forEach(card => {
+    const dStr = card.getAttribute('day');
+    const pStr = card.getAttribute('period');
+    if (dStr === null || pStr === null || dStr === '' || pStr === '') return;
+
+    const day = parseInt(dStr, 10);
+    const period = parseInt(pStr, 10);
+    const subId = card.getAttribute('subjectid') || '';
+    const subject = subjects[subId] || subId;
+
+    daysFound.add(day);
+    periodsFound.add(period);
+
+    const cIds = splitIds(card.getAttribute('classids'));
+    const tIds = splitIds(card.getAttribute('teacherids'));
+    const teacherNames = tIds.map(tid => teachers[tid] || tid);
+
+    // ربط الحصة بالشعبة
+    cIds.forEach(cid => {
+      if (!byClass[cid]) byClass[cid] = {};
+      if (!byClass[cid][day]) byClass[cid][day] = {};
+      if (!byClass[cid][day][period]) byClass[cid][day][period] = [];
+      byClass[cid][day][period].push({ subject, teachers: teacherNames });
+    });
+
+    // ربط الحصة بالمعلم
+    tIds.forEach(tid => {
+      if (!byTeacher[tid]) byTeacher[tid] = {};
+      if (!byTeacher[tid][day]) byTeacher[tid][day] = {};
+      const classNames = cIds.map(cid => classes[cid] || cid).join(' + ');
+      byTeacher[tid][day][period] = { class: classNames, subject };
+    });
+  });
+
+  xml.querySelectorAll("periods > period").forEach(p => {
+    const n = parseInt(p.getAttribute('period'), 10);
+    if (!isNaN(n)) periodsFound.add(n);
+  });
+
+  const pMin = periodsFound.size ? Math.min(1, Math.min(...periodsFound)) : 1;
+  const pMax = periodsFound.size ? Math.max(...periodsFound) : 6;
+  const showDays = Array.from(daysFound).sort((a,b) => a - b);
+
+  return {
+    teachers,
+    classes,
+    classOrder,
+    byClass,
+    byTeacher,
+    showDays: showDays.length ? showDays : [0, 1, 2, 3, 4],
+    pMin,
+    pMax,
+    today: new Date().getDay()
+  };
+}
+
+// ==========================================
+// 2. واجهة المستخدم والتنقل
+// ==========================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'classes' && i === 1) || (tab === 'teachers' && i === 2));
+  });
+  document.getElementById('tab-today').style.display = (tab === 'today') ? 'block' : 'none';
+  document.getElementById('tab-classes').style.display = (tab === 'classes') ? 'block' : 'none';
+  document.getElementById('tab-teachers').style.display = (tab === 'teachers') ? 'block' : 'none';
+}
+
+function renderAll() {
+  if (!APP_DATA) return;
+  renderTodaySchedule();
+  renderClasses();
+  renderTeachers();
+}
+
+// عرض جدول اليوم المباشر
+function renderTodaySchedule() {
+  const container = document.getElementById('todayTableWrap');
+  const controls = document.getElementById('todayControls');
+  const d = APP_DATA.today;
+  const dayName = DAY_NAMES[d] || 'اليوم';
+
+  // شريط فلترة الحصص
+  controls.innerHTML = `<button class="filter-chip ${selectedTodayPeriod === null ? 'active' : ''}" onclick="filterPeriod(null)">عرض الكل</button>`;
+  for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) {
+    controls.innerHTML += `<button class="filter-chip ${selectedTodayPeriod === p ? 'active' : ''}" onclick="filterPeriod(${p})">الحصة ${p}</button>`;
+  }
+
+  let html = `<table id="todayTable" class="${selectedTodayPeriod !== null ? 'has-selection' : ''}">
+    <thead>
+      <tr>
+        <th class="class-header">الشعبة / الصف</th>`;
+  for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) {
+    const isSelected = selectedTodayPeriod === p;
+    html += `<th class="${isSelected ? 'highlighted' : ''}">الحصة ${p}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  APP_DATA.classOrder.forEach(cid => {
+    const cName = APP_DATA.classes[cid] || cid;
+    html += `<tr><td class="class-header">${cName}</td>`;
+    for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) {
+      const slots = (APP_DATA.byClass[cid] && APP_DATA.byClass[cid][d] && APP_DATA.byClass[cid][d][p]) || [];
+      const isSelected = selectedTodayPeriod === p;
+      const isDimmed = selectedTodayPeriod !== null && !isSelected;
+
+      if (slots.length) {
+        const text = slots.map(s => {
+          const t = s.teachers.join(' · ');
+          return `<div><span class="subject-name">${s.subject}</span>${t ? `<br><span class="teacher-sub">${t}</span>` : ''}</div>`;
+        }).join('');
+        html += `<td class="${isSelected ? 'highlighted' : ''} ${isDimmed ? 'dimmed' : ''}">${text}</td>`;
+      } else {
+        html += `<td class="empty-cell ${isDimmed ? 'dimmed' : ''}">—</td>`;
+      }
+    }
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+function filterPeriod(p) {
+  selectedTodayPeriod = p;
+  renderTodaySchedule();
+}
+
+// عرض قائمة الشعب
+function renderClasses(filter = '') {
+  const list = document.getElementById('classList');
+  list.innerHTML = '';
+  const f = (filter || '').trim().toLowerCase();
+
+  APP_DATA.classOrder.forEach(id => {
+    const name = APP_DATA.classes[id];
+    if (f && !name.toLowerCase().includes(f)) return;
+    const btn = document.createElement('button');
+    btn.className = 'item-btn';
+    btn.textContent = name;
+    btn.onclick = () => showModalSchedule(name, buildClassTable(id));
+    list.appendChild(btn);
+  });
+}
+
+function buildClassTable(cid) {
+  const byC = APP_DATA.byClass[cid] || {};
+  let html = `<table><thead><tr><th class="day-cell">اليوم</th>`;
+  for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) html += `<th>حصة ${p}</th>`;
+  html += `</tr></thead><tbody>`;
+
+  APP_DATA.showDays.forEach(d => {
+    const isToday = (d === APP_DATA.today);
+    html += `<tr class="${isToday ? 'today-row' : ''}"><td class="day-cell">${DAY_NAMES[d] || d}</td>`;
+    for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) {
+      const slots = (byC[d] && byC[d][p]) || [];
+      if (slots.length) {
+        const cell = slots.map(s => `<div><div class="subject-name">${s.subject}</div><div class="teacher-sub">${s.teachers.join(' · ')}</div></div>`).join('');
+        html += `<td>${cell}</td>`;
+      } else {
+        html += `<td class="empty-cell">—</td>`;
+      }
+    }
+    html += `</tr>`;
+  });
+  return html + `</tbody></table>`;
+}
+
+// عرض قائمة المعلمين
+function renderTeachers(filter = '') {
+  const list = document.getElementById('teacherList');
+  list.innerHTML = '';
+  const f = (filter || '').trim().toLowerCase();
+
+  const sorted = Object.entries(APP_DATA.teachers).sort((a,b) => a[1].localeCompare(b[1], 'ar'));
+  sorted.forEach(([id, name]) => {
+    if (f && !name.toLowerCase().includes(f)) return;
+    const btn = document.createElement('button');
+    btn.className = 'item-btn';
+    btn.textContent = name;
+    btn.onclick = () => showModalSchedule(name, buildTeacherTable(id));
+    list.appendChild(btn);
+  });
+}
+
+function buildTeacherTable(tid) {
+  const byT = APP_DATA.byTeacher[tid] || {};
+  let html = `<table><thead><tr><th class="day-cell">اليوم</th>`;
+  for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) html += `<th>حصة ${p}</th>`;
+  html += `</tr></thead><tbody>`;
+
+  APP_DATA.showDays.forEach(d => {
+    const isToday = (d === APP_DATA.today);
+    html += `<tr class="${isToday ? 'today-row' : ''}"><td class="day-cell">${DAY_NAMES[d] || d}</td>`;
+    for (let p = APP_DATA.pMin; p <= APP_DATA.pMax; p++) {
+      const slot = (byT[d] && byT[d][p]);
+      if (slot) {
+        html += `<td><div><span class="subject-name">${slot.class}</span><br><span class="teacher-sub">${slot.subject}</span></div></td>`;
+      } else {
+        html += `<td class="empty-cell">—</td>`;
+      }
+    }
+    html += `</tr>`;
+  });
+  return html + `</tbody></table>`;
+}
+
+// المودال وحفظ الصور
+function showModalSchedule(title, tableHtml) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = tableHtml;
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('btnSaveImg').onclick = () => {
+  const title = document.getElementById('modalTitle').textContent;
+  const exp = document.getElementById('exportContainer');
+  exp.innerHTML = `
+    <div style="background:#1e3a8a;color:#fff;padding:1.2rem;border-radius:0.75rem 0.75rem 0 0;text-align:center;">
+      <h2 style="font-size:1.6rem;font-weight:800;">ثانوية عمر المختار</h2>
+      <p style="font-size:1.1rem;margin-top:0.3rem;">${title}</p>
+    </div>
+    <div style="padding:1rem;border:1px solid #cbd5e1;border-top:none;">
+      ${document.getElementById('modalBody').innerHTML}
+    </div>
+  `;
+  exp.style.left = '0';
+  setTimeout(() => {
+    html2canvas(exp, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+      const a = document.createElement('a');
+      a.download = `جدول_${title}.png`;
+      a.href = canvas.toDataURL();
+      a.click();
+      exp.style.left = '-9999px';
+    });
+  }, 150);
+};
+
+// أحداث البحث والإغلاق
+document.getElementById('classSearch').oninput = e => renderClasses(e.target.value);
+document.getElementById('teacherSearch').oninput = e => renderTeachers(e.target.value);
+document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
+document.onkeydown = e => { if (e.key === 'Escape') closeModal(); };
+
+// تسجيل الـ Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(console.error);
+}
+</script>
+</body>
+</html>
